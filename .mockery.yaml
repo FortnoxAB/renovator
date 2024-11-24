@@ -1,0 +1,15 @@
+packages:
+  github.com/redis/go-redis/v9:
+    interfaces:
+      # select the interfaces you want mocked
+      Cmdable:
+        config:
+          outpkg: mocks
+          dir: mocks
+  github.com/fortnoxab/renovator/pkg/command:
+    interfaces:
+      # select the interfaces you want mocked
+      Commander:
+        config:
+          outpkg: mocks
+          dir: mocks
