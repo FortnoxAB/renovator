@@ -45,7 +45,7 @@ func NewMasterFromContext(cCtx *cli.Context) (*Master, error) {
 	if cs := cCtx.String("schedule"); cs != "" {
 		cronSchedule, err = cron.ParseStandard(cs)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create cron schedule, err: %w", err)
+			return nil, fmt.Errorf("failed to create cron schedule from value: '%s', err: %w", cs, err)
 		}
 	}
 	return &Master{
@@ -66,7 +66,7 @@ func (m *Master) Run(ctx context.Context) error {
 	if m.RunFirstTime {
 		err := doRun(ctx, m.RedisClient, m.Renovator, m.LeaderElect)
 		if err != nil {
-			return err
+			logrus.Errorf("failed first time run, err: %s", err.Error())
 		}
 	}
 
@@ -113,7 +113,7 @@ func doRun(ctx context.Context, redisClient redis.Cmdable, renovateRunner *renov
 		}
 
 		if !isLeader {
-			logrus.Debug("lost election, exiting")
+			logrus.Debug("lost election, noop")
 			return nil
 		}
 		logrus.Debug("won election, running repo discovery")

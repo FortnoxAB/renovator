@@ -1,0 +1,92 @@
+---
+services:
+  master-1:
+    image: renovate/renovate:39.21.1
+    command:
+      - /renovator/renovator
+      - --loglevel=debug
+      - master
+      - --redis-url=redis://redis:6379/0
+      - --schedule=*/1 * * * *
+      - --run-first-time
+      - --leaderelect
+    env_file:
+      - .env
+    volumes:
+      - master-1-volume:/renovator
+    depends_on:
+      init-master-1:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+  init-master-1:
+    build:
+      context: .
+    user: root
+    entrypoint: ["sh"]
+    command: ["-c", "cp /renovator /vol/renovator && echo done"]
+    volumes:
+      - master-1-volume:/vol
+
+  master-2:
+    image: renovate/renovate:39.21.1
+    command:
+      - /renovator/renovator
+      - --loglevel=debug
+      - master
+      - --redis-url=redis://redis:6379/0
+      - --schedule=*/1 * * * *
+      - --run-first-time
+      - --leaderelect
+    env_file:
+      - .env
+    volumes:
+      - master-2-volume:/renovator
+    depends_on:
+      init-master-2:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+  init-master-2:
+    build:
+      context: .
+    user: root
+    entrypoint: ["sh"]
+    command: ["-c", "cp /renovator /vol/renovator && echo done"]
+    volumes:
+      - master-2-volume:/vol
+
+
+  agent-1:
+    image: renovate/renovate:39.21.1-full
+    command:
+      - /renovator/renovator
+      # - --loglevel=debug
+      - agent
+      - --redis-url=redis://redis:6379/0
+    depends_on:
+      init-agent-1:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    volumes:
+      - agent-1-volume:/renovator
+  init-agent-1:
+    build:
+      context: .
+    user: root
+    entrypoint: ["sh"]
+    command: ["-c", "cp /renovator /vol/renovator && echo done"]
+    volumes:
+      - agent-1-volume:/vol
+
+  redis:
+    image: redis:7.2.6-alpine
+
+volumes:
+  master-1-volume:
+  master-2-volume:
+  agent-1-volume:
+  # agent-2-volume:

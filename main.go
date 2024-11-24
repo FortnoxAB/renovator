@@ -71,7 +71,7 @@ func app() *cli.App {
 					Value: 3 * time.Minute,
 				},
 				&cli.StringFlag{
-					Name:  "schdule",
+					Name:  "schedule",
 					Usage: "Run discovery on a schedule instead of onetime, value is a standard cron string",
 				},
 				&cli.BoolFlag{

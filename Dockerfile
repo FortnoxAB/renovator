@@ -1,4 +1,5 @@
-FROM gcr.io/distroless/static-debian12:nonroot
-COPY renovator /renovator
-USER nonroot
+FROM alpine:3.20
+WORKDIR /
+COPY renovator renovator
+USER nobody
 ENTRYPOINT ["/renovator"]
