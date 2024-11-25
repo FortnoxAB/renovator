@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
 )
 
 const lock = "lock.renovator-leader"
@@ -26,36 +27,18 @@ func NewCandidate(rc redis.Cmdable, electionDur time.Duration) *Candidate {
 	}
 }
 
-func (c *Candidate) Elect(ctx context.Context) (isLeader bool, err error) {
-	isLeader, err = c.redisClient.SetNX(ctx, lock, c.id, c.sessionTTL).Result()
-	return
-}
-
 func (c *Candidate) IsLeader(ctx context.Context) (bool, error) {
+	isLeader, err := c.redisClient.SetNX(ctx, lock, c.id, c.sessionTTL).Result()
+
+	if err == nil && isLeader {
+		logrus.Debug("aquired new leader lock")
+		return true, nil
+	}
+
 	leaderId, err := c.redisClient.Get(ctx, lock).Result()
 	if err != nil {
 		return false, err
 	}
+	logrus.Debugf("current leader is: %s", leaderId)
 	return leaderId == c.id, nil
 }
-
-// type ballot struct {
-// 	identity   string
-// 	expiration time.Time
-// }
-
-// func (c *Candidate) createBallot() ballot {
-// 	return ballot{
-// 		identity:   c.id,
-// 		expiration: time.Now().Add(c.sessionTTL),
-// 	}
-// }
-
-// func (c *Candidate) DoElection(ctx context.Context, sessionTTL time.Duration) (bool, error) {
-
-// 	b := c.createBallot()
-
-// 	isLeader, err := rc.SetNX(ctx, lock, b, sessionTTL).Result()
-
-// 	return true, nil
-// }

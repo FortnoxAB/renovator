@@ -68,7 +68,7 @@ func app() *cli.App {
 				&cli.DurationFlag{
 					Name:  "election-ttl",
 					Usage: "leader election ttl",
-					Value: 3 * time.Minute,
+					Value: 10 * time.Second,
 				},
 				&cli.StringFlag{
 					Name:  "schedule",
@@ -88,7 +88,8 @@ func app() *cli.App {
 				if err != nil {
 					return err
 				}
-				return a.Run(ctx.Context)
+				a.Run(ctx.Context)
+				return nil
 			},
 			Flags: []cli.Flag{
 				redisStringflag,
