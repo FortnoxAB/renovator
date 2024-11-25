@@ -18,7 +18,7 @@ func (_m *MockCommander) EXPECT() *MockCommander_Expecter {
 }
 
 // Run provides a mock function with given fields: head, parts
-func (_m *MockCommander) Run(head string, parts ...string) (string, string, int, error) {
+func (_m *MockCommander) Run(head string, parts ...string) error {
 	_va := make([]interface{}, len(parts))
 	for _i := range parts {
 		_va[_i] = parts[_i]
@@ -32,38 +32,14 @@ func (_m *MockCommander) Run(head string, parts ...string) (string, string, int,
 		panic("no return value specified for Run")
 	}
 
-	var r0 string
-	var r1 string
-	var r2 int
-	var r3 error
-	if rf, ok := ret.Get(0).(func(string, ...string) (string, string, int, error)); ok {
-		return rf(head, parts...)
-	}
-	if rf, ok := ret.Get(0).(func(string, ...string) string); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, ...string) error); ok {
 		r0 = rf(head, parts...)
 	} else {
-		r0 = ret.Get(0).(string)
+		r0 = ret.Error(0)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, ...string) string); ok {
-		r1 = rf(head, parts...)
-	} else {
-		r1 = ret.Get(1).(string)
-	}
-
-	if rf, ok := ret.Get(2).(func(string, ...string) int); ok {
-		r2 = rf(head, parts...)
-	} else {
-		r2 = ret.Get(2).(int)
-	}
-
-	if rf, ok := ret.Get(3).(func(string, ...string) error); ok {
-		r3 = rf(head, parts...)
-	} else {
-		r3 = ret.Error(3)
-	}
-
-	return r0, r1, r2, r3
+	return r0
 }
 
 // MockCommander_Run_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Run'
@@ -92,18 +68,18 @@ func (_c *MockCommander_Run_Call) Run(run func(head string, parts ...string)) *M
 	return _c
 }
 
-func (_c *MockCommander_Run_Call) Return(stdOut string, stdErr string, exitCode int, err error) *MockCommander_Run_Call {
-	_c.Call.Return(stdOut, stdErr, exitCode, err)
+func (_c *MockCommander_Run_Call) Return(_a0 error) *MockCommander_Run_Call {
+	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockCommander_Run_Call) RunAndReturn(run func(string, ...string) (string, string, int, error)) *MockCommander_Run_Call {
+func (_c *MockCommander_Run_Call) RunAndReturn(run func(string, ...string) error) *MockCommander_Run_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // RunWithEnv provides a mock function with given fields: env, head, parts
-func (_m *MockCommander) RunWithEnv(env []string, head string, parts ...string) (string, string, int, error) {
+func (_m *MockCommander) RunWithEnv(env []string, head string, parts ...string) error {
 	_va := make([]interface{}, len(parts))
 	for _i := range parts {
 		_va[_i] = parts[_i]
@@ -117,38 +93,14 @@ func (_m *MockCommander) RunWithEnv(env []string, head string, parts ...string) 
 		panic("no return value specified for RunWithEnv")
 	}
 
-	var r0 string
-	var r1 string
-	var r2 int
-	var r3 error
-	if rf, ok := ret.Get(0).(func([]string, string, ...string) (string, string, int, error)); ok {
-		return rf(env, head, parts...)
-	}
-	if rf, ok := ret.Get(0).(func([]string, string, ...string) string); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]string, string, ...string) error); ok {
 		r0 = rf(env, head, parts...)
 	} else {
-		r0 = ret.Get(0).(string)
+		r0 = ret.Error(0)
 	}
 
-	if rf, ok := ret.Get(1).(func([]string, string, ...string) string); ok {
-		r1 = rf(env, head, parts...)
-	} else {
-		r1 = ret.Get(1).(string)
-	}
-
-	if rf, ok := ret.Get(2).(func([]string, string, ...string) int); ok {
-		r2 = rf(env, head, parts...)
-	} else {
-		r2 = ret.Get(2).(int)
-	}
-
-	if rf, ok := ret.Get(3).(func([]string, string, ...string) error); ok {
-		r3 = rf(env, head, parts...)
-	} else {
-		r3 = ret.Error(3)
-	}
-
-	return r0, r1, r2, r3
+	return r0
 }
 
 // MockCommander_RunWithEnv_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RunWithEnv'
@@ -178,12 +130,12 @@ func (_c *MockCommander_RunWithEnv_Call) Run(run func(env []string, head string,
 	return _c
 }
 
-func (_c *MockCommander_RunWithEnv_Call) Return(stdOut string, stdErr string, exitCode int, err error) *MockCommander_RunWithEnv_Call {
-	_c.Call.Return(stdOut, stdErr, exitCode, err)
+func (_c *MockCommander_RunWithEnv_Call) Return(_a0 error) *MockCommander_RunWithEnv_Call {
+	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockCommander_RunWithEnv_Call) RunAndReturn(run func([]string, string, ...string) (string, string, int, error)) *MockCommander_RunWithEnv_Call {
+func (_c *MockCommander_RunWithEnv_Call) RunAndReturn(run func([]string, string, ...string) error) *MockCommander_RunWithEnv_Call {
 	_c.Call.Return(run)
 	return _c
 }

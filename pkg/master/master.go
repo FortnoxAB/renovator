@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/fortnoxab/renovator/pkg/command"
 	"github.com/fortnoxab/renovator/pkg/leaderelect"
 	"github.com/fortnoxab/renovator/pkg/renovate"
+	"github.com/fortnoxab/renovator/pkg/webserver"
 	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
@@ -17,8 +17,6 @@ import (
 
 const RedisRepoListKey = "renovator-joblist"
 
-const electionTTL = 2 * time.Minute
-
 type Master struct {
 	Renovator    *renovate.Runner
 	RedisClient  redis.Cmdable
@@ -26,6 +24,7 @@ type Master struct {
 	LeaderElect  bool
 	CronSchedule cron.Schedule
 	RunFirstTime bool
+	Webserver    *webserver.Webserver
 }
 
 type autoDiscoverJob struct {
@@ -57,6 +56,7 @@ func NewMasterFromContext(cCtx *cli.Context) (*Master, error) {
 		LeaderElect:  cCtx.Bool("leaderelect"),
 		CronSchedule: cronSchedule,
 		RunFirstTime: cCtx.Bool("run-first-time"),
+		Webserver:    &webserver.Webserver{Port: cCtx.String("port"), EnableMetrics: true},
 	}, nil
 }
 
@@ -94,6 +94,13 @@ func (m *Master) Run(ctx context.Context) error {
 		cronRnr.Run()
 	}()
 
+	if m.Webserver != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			m.Webserver.Start(ctx)
+		}()
+	}
 	// If context is cancelled, stop cronrunner and wait for job to finish
 	<-ctx.Done()
 	logrus.Debug("main context cancelled")

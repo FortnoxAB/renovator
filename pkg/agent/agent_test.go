@@ -35,23 +35,23 @@ func TestRun(t *testing.T) {
 		redisMockCall.ReturnArguments = mock.Arguments{redisMockList.LPop()}
 	}
 
-	commanderMock.On("Run", "renovate", "project1/repo1").
+	commanderMock.On("RunWithEnv", []string{}, "renovate", "project1/repo1").
 		Run(func(args mock.Arguments) {
 			time.Sleep(200 * time.Millisecond)
 		}).
-		Return("", "", 0, nil).
+		Return(nil).
 		Once()
-	commanderMock.On("Run", "renovate", "project1/repo2").
+	commanderMock.On("RunWithEnv", []string{}, "renovate", "project1/repo2").
 		Run(func(args mock.Arguments) {
 			time.Sleep(200 * time.Millisecond)
 		}).
-		Return("", "", 0, nil).
+		Return(nil).
 		Once()
-	commanderMock.On("Run", "renovate", "project2/repo1").
+	commanderMock.On("RunWithEnv", []string{}, "renovate", "project2/repo1").
 		Run(func(args mock.Arguments) {
 			time.Sleep(200 * time.Millisecond)
 		}).
-		Return("", "", 0, nil).
+		Return(nil).
 		Once()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
