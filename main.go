@@ -78,6 +78,11 @@ func app() *cli.App {
 					Name:  "run-first-time",
 					Usage: "run discovery directly, only applicable if a schedule is provided",
 				},
+				&cli.StringFlag{
+					Name:  "port",
+					Usage: "webserver port for pprof and metrics",
+					Value: "8080",
+				},
 			},
 		},
 		{
@@ -97,6 +102,11 @@ func app() *cli.App {
 					Name:  "max-process-count",
 					Value: 1,
 					Usage: "Defines the maximum amount of simultaneous renovate processes",
+				},
+				&cli.StringFlag{
+					Name:  "port",
+					Usage: "webserver port for pprof and metrics",
+					Value: "8080",
 				},
 			},
 		},

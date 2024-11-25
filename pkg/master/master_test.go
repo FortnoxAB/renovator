@@ -49,7 +49,7 @@ func TestRun(t *testing.T) {
 	repoList := []string{"project1/repo1", "project1/repo2", "project2/repo1"}
 
 	renovateWrite(t, commanderMock, repoList).
-		Return("", "", 0, nil).
+		Return(nil).
 		Once()
 
 	redisMock.On("LRange", mock.Anything, "renovator-joblist", int64(0), int64(-1)).
@@ -81,7 +81,7 @@ func TestRunDontPushIfExists(t *testing.T) {
 	repoList := []string{"project1/repo1", "project1/repo2", "project2/repo1"}
 
 	renovateWrite(t, commanderMock, repoList).
-		Return("", "", 0, nil).
+		Return(nil).
 		Once()
 
 	redisMock.On("LRange", mock.Anything, "renovator-joblist", int64(0), int64(-1)).
@@ -118,7 +118,7 @@ func TestRunWithLeaderElect(t *testing.T) {
 	repoList := []string{"project1/repo1", "project1/repo2", "project2/repo1"}
 
 	renovateWrite(t, commanderMock, repoList).
-		Return("", "", 0, nil).
+		Return(nil).
 		Once()
 
 	redisMock.On("LRange", mock.Anything, "renovator-joblist", int64(0), int64(-1)).
@@ -177,7 +177,7 @@ func TestRunWithSchedule(t *testing.T) {
 	repoList := []string{"project1/repo1", "project1/repo2", "project2/repo1"}
 
 	renovateWrite(t, commanderMock, repoList).
-		Return("", "", 0, nil).
+		Return(nil).
 		Times(3)
 
 	redisMock.On("LRange", mock.Anything, "renovator-joblist", int64(0), int64(-1)).
@@ -225,7 +225,7 @@ func TestRunWithScheduleAndLeaderElection(t *testing.T) {
 	repoList := []string{"project1/repo1", "project1/repo2", "project2/repo1"}
 
 	renovateWrite(t, commanderMock, repoList).
-		Return("", "", 0, nil).
+		Return(nil).
 		Times(3)
 
 	redisMock.On("LRange", mock.Anything, "renovator-joblist", int64(0), int64(-1)).

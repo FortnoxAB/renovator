@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/fortnoxab/renovator/pkg/command"
 )
@@ -19,7 +20,14 @@ func NewRunner(c command.Commander) *Runner {
 }
 
 func (r *Runner) RunRenovate(repo string) error {
-	_, _, _, err := r.commander.Run("renovate", repo)
+	repo, options, _ := strings.Cut(repo, "?")
+
+	env := []string{}
+	switch options {
+	case "loglevel=debug":
+		env = []string{"LOG_LEVEL=debug"}
+	}
+	err := r.commander.RunWithEnv(env, "renovate", repo)
 	if err != nil {
 		return fmt.Errorf("error running renovate on repo: %s, err: %w", repo, err)
 	}
@@ -35,9 +43,9 @@ func (r *Runner) DoAutoDiscover() ([]string, error) {
 	}
 	defer os.Remove(file.Name())
 
-	stdOut, stdErr, _, err := r.commander.Run("renovate", "--write-discovered-repos", file.Name())
+	err = r.commander.Run("renovate", "--write-discovered-repos", file.Name())
 	if err != nil {
-		return nil, fmt.Errorf("error running renovate discovery, err: %w, stdOut: '%s', stdErr: '%s'", err, stdOut, stdErr)
+		return nil, fmt.Errorf("error running renovate discovery, err: %w", err)
 	}
 
 	fileData, err := os.ReadFile(file.Name())
