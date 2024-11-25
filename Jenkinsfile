@@ -27,7 +27,7 @@ node('go1.23') {
 			sh('make test')
 		}
 
-		if (env.BRANCH_NAME == 'master') {
+		if (env.BRANCH_NAME == 'main') {
 			stage('Generate and push docker image'){
 				docker.withRegistry("https://quay.io", 'docker-registry') {
 					strippedTag = tag.replaceFirst('v', '')
