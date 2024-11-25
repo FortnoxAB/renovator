@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/fortnoxab/renovator/mocks"
+	"github.com/fortnoxab/renovator/pkg/master"
 	"github.com/fortnoxab/renovator/pkg/renovate"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -30,7 +30,7 @@ func TestRun(t *testing.T) {
 		list: []string{"project1/repo1", "project1/repo2", "project2/repo1"},
 	}
 
-	redisMockCall := redisMock.On("LPop", mock.Anything, "renovator-joblist")
+	redisMockCall := redisMock.On("BLPop", mock.Anything, time.Duration(0), "renovator-joblist")
 	redisMockCall.RunFn = func(a mock.Arguments) {
 		redisMockCall.ReturnArguments = mock.Arguments{redisMockList.LPop()}
 	}
@@ -57,8 +57,7 @@ func TestRun(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
-	err := a.Run(ctx)
-	assert.NoError(t, err)
+	a.Run(ctx)
 }
 
 type redisMockList struct {
@@ -66,15 +65,15 @@ type redisMockList struct {
 	list []string
 }
 
-func (t *redisMockList) LPop() *redis.StringCmd {
+func (t *redisMockList) LPop() *redis.StringSliceCmd {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
 	if len(t.list) == 0 {
-		return redis.NewStringResult("", redis.Nil)
+		return redis.NewStringSliceResult(nil, redis.Nil)
 	}
 	// Take first value and shift remaining
 	first := t.list[0]
 	t.list = t.list[1:]
-	return redis.NewStringResult(first, nil)
+	return redis.NewStringSliceResult([]string{master.RedisRepoListKey, first}, nil)
 }

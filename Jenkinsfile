@@ -9,29 +9,30 @@ properties(
 )
 
 node('go1.23') {
-
-    def tag = ''
-	stage('Checkout') {
-		checkout scm
-		tag = sh(script: 'git tag -l --contains HEAD', returnStdout: true).trim()
-	}
-
-	stage('Fetch dependencies') {
-		// using ID because: https://issues.jenkins-ci.org/browse/JENKINS-32101
-		sshagent(credentials: ['18270936-0906-4c40-a90e-bcf6661f501d']) {
-			sh('go mod download')
+	container('run'){
+		def tag = ''
+		stage('Checkout') {
+			checkout scm
+			tag = sh(script: 'git tag -l --contains HEAD', returnStdout: true).trim()
 		}
-	}
 
-	stage('Run test') {
-		sh('make test')
-	}
+		stage('Fetch dependencies') {
+			// using ID because: https://issues.jenkins-ci.org/browse/JENKINS-32101
+			sshagent(credentials: ['18270936-0906-4c40-a90e-bcf6661f501d']) {
+				sh('go mod download')
+			}
+		}
 
-	if (env.BRANCH_NAME == 'master') {
-		stage('Generate and push docker image'){
-			docker.withRegistry("https://quay.io", 'docker-registry') {
-				strippedTag = tag.replaceFirst('v', '')
-				sh("make push VERSION=${strippedTag}")
+		stage('Run test') {
+			sh('make test')
+		}
+
+		if (env.BRANCH_NAME == 'master') {
+			stage('Generate and push docker image'){
+				docker.withRegistry("https://quay.io", 'docker-registry') {
+					strippedTag = tag.replaceFirst('v', '')
+					sh("make push VERSION=${strippedTag}")
+				}
 			}
 		}
 	}
