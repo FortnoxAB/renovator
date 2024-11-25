@@ -35,9 +35,9 @@ func (r *Runner) DoAutoDiscover() ([]string, error) {
 	}
 	defer os.Remove(file.Name())
 
-	_, _, _, err = r.commander.Run("renovate", "--write-discovered-repos", file.Name())
+	stdOut, stdErr, _, err := r.commander.Run("renovate", "--write-discovered-repos", file.Name())
 	if err != nil {
-		return nil, fmt.Errorf("error running renovate discovery, err: %w", err)
+		return nil, fmt.Errorf("error running renovate discovery, err: %w, stdOut: '%s', stdErr: '%s'", err, stdOut, stdErr)
 	}
 
 	fileData, err := os.ReadFile(file.Name())

@@ -21,3 +21,15 @@ imports: SHELL:=/bin/bash
 imports:
 	go install golang.org/x/tools/cmd/goimports@latest
 	ASD=$$(goimports -l . 2>&1); test -z "$$ASD" || (echo "Code is not formatted correctly according to goimports!  $$ASD" && exit 1)
+
+
+docker-compose-up:
+	docker compose up
+
+docker-compose-down:
+	docker compose down
+
+docker-compose-build: build
+	docker compose build --no-cache
+
+docker-compose: docker-compose-down docker-compose-build docker-compose-up
