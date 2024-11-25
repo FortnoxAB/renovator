@@ -3,8 +3,8 @@ package agent
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
-	"time"
 
 	"github.com/fortnoxab/renovator/pkg/command"
 	"github.com/fortnoxab/renovator/pkg/master"
@@ -33,61 +33,53 @@ func NewAgentFromContext(cCtx *cli.Context) (*Agent, error) {
 	}, nil
 }
 
-func (a *Agent) Run(ctx context.Context) error {
+func (a *Agent) Run(ctx context.Context) {
 
-	guard := make(chan struct{}, a.MaxProcessCount)
+	reposToProcess := make(chan string)
 
 	wg := &sync.WaitGroup{}
 
-outer:
-	for {
+	for i := 0; i < a.MaxProcessCount; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
 
-		select {
-		case <-ctx.Done():
-			break outer
-		case guard <- struct{}{}: // will block if guard channel is already filled
-
-			repo, err := a.RedisClient.LPop(ctx, master.RedisRepoListKey).Result()
-			if err != nil {
-
-				if err == redis.Nil { // No values in redis queue, sleep to conserve resources
-					logrus.Debugf("found no values in redis queue, sleeping")
-					time.Sleep(100 * time.Millisecond) // TODO: Make this duration configurable?
+				select {
+				case <-ctx.Done():
+					return
+				case repo := <-reposToProcess:
+					logrus.Infof("running renovate on repo: %s", repo)
+					err := a.Renovator.RunRenovate(repo)
+					if err != nil {
+						logrus.Errorf("error renovating repo: %s err: %s", repo, err)
+						continue
+					}
+					logrus.Infof("finished renovating repo: %s", repo)
 				}
 
-				// TODO: Also sleep if actual error???
-				if err != redis.Nil {
-					logrus.Errorf("error when popping value from redis list, err: %s", err.Error())
-				}
-				<-guard
-				continue
 			}
+		}()
+	}
 
-			logrus.Infof("running renovate on repo: %s", repo)
-
-			wg.Add(1)
-			go func() {
-
-				//time.Sleep(2 * time.Second)
-
-				err := a.Renovator.RunRenovate(repo)
-				if err != nil {
-					logrus.Error(err)
-				}
-
-				logrus.Infof("finished renovating repo: %s", repo)
-
-				<-guard
-				wg.Done()
-			}()
-		default:
-			// TODO: Do we need this??
-			// Sleep to conserve resources
-			time.Sleep(100 * time.Millisecond)
+	for {
+		if ctx.Err() != nil {
+			break
+		}
+		repos, err := a.RedisClient.BLPop(ctx, 0, master.RedisRepoListKey).Result() // 0 duration == block until key exists.
+		if err != nil {
+			logrus.Error("BLpop err: ", err)
+			continue
 		}
 
+		logrus.Debugf("got %d number of repos to process", len(repos))
+
+		if len(repos) != 2 || repos[0] != master.RedisRepoListKey {
+			logrus.Errorf("unexpected reply from BLpop: %s", strings.Join(repos, ","))
+			continue
+		}
+
+		reposToProcess <- repos[1]
 	}
 	wg.Wait()
-
-	return nil
 }

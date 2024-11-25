@@ -22,6 +22,7 @@ const electionTTL = 2 * time.Minute
 type Master struct {
 	Renovator    *renovate.Runner
 	RedisClient  redis.Cmdable
+	Candidate    *leaderelect.Candidate
 	LeaderElect  bool
 	CronSchedule cron.Schedule
 	RunFirstTime bool
@@ -32,6 +33,7 @@ type autoDiscoverJob struct {
 	redisClient    redis.Cmdable
 	renovateRunner *renovate.Runner
 	doLeaderElect  bool
+	candidate      *leaderelect.Candidate
 }
 
 func NewMasterFromContext(cCtx *cli.Context) (*Master, error) {
@@ -50,6 +52,7 @@ func NewMasterFromContext(cCtx *cli.Context) (*Master, error) {
 	}
 	return &Master{
 		Renovator:    renovate.NewRunner(&command.Exec{}),
+		Candidate:    leaderelect.NewCandidate(rc, cCtx.Duration("election-ttl")),
 		RedisClient:  rc,
 		LeaderElect:  cCtx.Bool("leaderelect"),
 		CronSchedule: cronSchedule,
@@ -60,11 +63,11 @@ func NewMasterFromContext(cCtx *cli.Context) (*Master, error) {
 func (m *Master) Run(ctx context.Context) error {
 
 	if m.CronSchedule == nil {
-		return doRun(ctx, m.RedisClient, m.Renovator, m.LeaderElect)
+		return doRun(ctx, m.Candidate, m.RedisClient, m.Renovator, m.LeaderElect)
 	}
 
 	if m.RunFirstTime {
-		err := doRun(ctx, m.RedisClient, m.Renovator, m.LeaderElect)
+		err := doRun(ctx, m.Candidate, m.RedisClient, m.Renovator, m.LeaderElect)
 		if err != nil {
 			logrus.Errorf("failed first time run, err: %s", err.Error())
 		}
@@ -76,6 +79,8 @@ func (m *Master) Run(ctx context.Context) error {
 		redisClient:    m.RedisClient,
 		renovateRunner: m.Renovator,
 		doLeaderElect:  m.LeaderElect,
+		candidate:      m.Candidate,
+		ctx:            ctx,
 	}
 
 	cronRnr.Schedule(m.CronSchedule, job)
@@ -84,9 +89,9 @@ func (m *Master) Run(ctx context.Context) error {
 
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		logrus.Debug("running cron")
 		cronRnr.Run()
-		wg.Done()
 	}()
 
 	// If context is cancelled, stop cronrunner and wait for job to finish
@@ -102,12 +107,10 @@ func (m *Master) Run(ctx context.Context) error {
 	return nil
 }
 
-func doRun(ctx context.Context, redisClient redis.Cmdable, renovateRunner *renovate.Runner, doLeaderElect bool) error {
+func doRun(ctx context.Context, candidate *leaderelect.Candidate, redisClient redis.Cmdable, renovateRunner *renovate.Runner, doLeaderElect bool) error {
 
 	if doLeaderElect {
-		candidate := leaderelect.NewCandidate(redisClient, electionTTL)
-
-		isLeader, err := candidate.Elect(ctx)
+		isLeader, err := candidate.IsLeader(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to elect leader, err: %w", err)
 		}
@@ -125,8 +128,34 @@ func doRun(ctx context.Context, redisClient redis.Cmdable, renovateRunner *renov
 		return err
 	}
 
+	var reposToQueue []string
+	reposInQueue, err := redisClient.LRange(ctx, RedisRepoListKey, 0, -1).Result()
+	if err != nil && err != redis.Nil {
+		return fmt.Errorf("error from LRange: %w", err)
+	}
+
+	for _, repo := range repos {
+
+		add := true
+
+		for _, e := range reposInQueue {
+			if repo == e {
+				add = false
+				break
+			}
+		}
+		if add {
+			reposToQueue = append(reposToQueue, repo)
+		}
+	}
+
+	if len(reposToQueue) == 0 {
+		logrus.Warn("zero repos to push to redis")
+		return nil
+	}
+
 	logrus.Debug("pushing repo list to redis")
-	err = redisClient.RPush(ctx, RedisRepoListKey, repos).Err()
+	err = redisClient.RPush(ctx, RedisRepoListKey, reposToQueue).Err()
 	if err != nil {
 		return fmt.Errorf("failed to push repolist to redis, err: %w", err)
 	}
@@ -135,7 +164,7 @@ func doRun(ctx context.Context, redisClient redis.Cmdable, renovateRunner *renov
 
 func (j autoDiscoverJob) Run() {
 	logrus.Debug("running autodiscovery")
-	err := doRun(j.ctx, j.redisClient, j.renovateRunner, j.doLeaderElect)
+	err := doRun(j.ctx, j.candidate, j.redisClient, j.renovateRunner, j.doLeaderElect)
 	if err != nil {
 		logrus.Errorf("error when running autodiscovery, err: %s", err.Error())
 	}

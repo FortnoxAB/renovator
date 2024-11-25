@@ -61,7 +61,7 @@ services:
     image: renovate/renovate:39.21.1-full
     command:
       - /renovator/renovator
-      # - --loglevel=debug
+      - --loglevel=debug
       - agent
       - --redis-url=redis://redis:6379/0
     depends_on:
@@ -71,6 +71,8 @@ services:
         condition: service_started
     env_file:
       - .env
+    environment:
+      RENOVATE_AUTODISCOVER: "false"
     volumes:
       - agent-1-volume:/renovator
   init-agent-1:
