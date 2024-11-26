@@ -6,7 +6,9 @@ import (
 	"sync"
 
 	"github.com/fortnoxab/renovator/pkg/command"
+	"github.com/fortnoxab/renovator/pkg/kafka"
 	"github.com/fortnoxab/renovator/pkg/leaderelect"
+	localredis "github.com/fortnoxab/renovator/pkg/redis"
 	"github.com/fortnoxab/renovator/pkg/renovate"
 	"github.com/fortnoxab/renovator/pkg/webserver"
 	"github.com/redis/go-redis/v9"
@@ -14,8 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
-
-const RedisRepoListKey = "renovator-joblist"
 
 type Master struct {
 	Renovator    *renovate.Runner
@@ -25,6 +25,7 @@ type Master struct {
 	CronSchedule cron.Schedule
 	RunFirstTime bool
 	Webserver    *webserver.Webserver
+	Brokers      string
 }
 
 type autoDiscoverJob struct {
@@ -57,6 +58,7 @@ func NewMasterFromContext(cCtx *cli.Context) (*Master, error) {
 		CronSchedule: cronSchedule,
 		RunFirstTime: cCtx.Bool("run-first-time"),
 		Webserver:    &webserver.Webserver{Port: cCtx.String("port"), EnableMetrics: true},
+		Brokers:      cCtx.String("kafka-brokers"),
 	}, nil
 }
 
@@ -101,6 +103,15 @@ func (m *Master) Run(ctx context.Context) error {
 			m.Webserver.Start(ctx)
 		}()
 	}
+
+	if m.Brokers != "" {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			kafka.Start(ctx, m.Brokers, m.RedisClient)
+		}()
+	}
+
 	// If context is cancelled, stop cronrunner and wait for job to finish
 	<-ctx.Done()
 	logrus.Debug("main context cancelled")
@@ -135,25 +146,9 @@ func doRun(ctx context.Context, candidate *leaderelect.Candidate, redisClient re
 		return err
 	}
 
-	var reposToQueue []string
-	reposInQueue, err := redisClient.LRange(ctx, RedisRepoListKey, 0, -1).Result()
-	if err != nil && err != redis.Nil {
-		return fmt.Errorf("error from LRange: %w", err)
-	}
-
-	for _, repo := range repos {
-
-		add := true
-
-		for _, e := range reposInQueue {
-			if repo == e {
-				add = false
-				break
-			}
-		}
-		if add {
-			reposToQueue = append(reposToQueue, repo)
-		}
+	reposToQueue, err := localredis.RemoveAlreadyQueued(ctx, redisClient, repos)
+	if err != nil {
+		return err
 	}
 
 	if len(reposToQueue) == 0 {
@@ -162,7 +157,7 @@ func doRun(ctx context.Context, candidate *leaderelect.Candidate, redisClient re
 	}
 
 	logrus.Debug("pushing repo list to redis")
-	err = redisClient.RPush(ctx, RedisRepoListKey, reposToQueue).Err()
+	err = redisClient.RPush(ctx, localredis.RedisRepoListKey, reposToQueue).Err()
 	if err != nil {
 		return fmt.Errorf("failed to push repolist to redis, err: %w", err)
 	}
