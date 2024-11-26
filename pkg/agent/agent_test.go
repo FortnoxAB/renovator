@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/fortnoxab/renovator/mocks"
-	"github.com/fortnoxab/renovator/pkg/master"
+	localredis "github.com/fortnoxab/renovator/pkg/redis"
 	"github.com/fortnoxab/renovator/pkg/renovate"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
@@ -75,5 +75,5 @@ func (t *redisMockList) LPop() *redis.StringSliceCmd {
 	// Take first value and shift remaining
 	first := t.list[0]
 	t.list = t.list[1:]
-	return redis.NewStringSliceResult([]string{master.RedisRepoListKey, first}, nil)
+	return redis.NewStringSliceResult([]string{localredis.RedisRepoListKey, first}, nil)
 }

@@ -83,6 +83,10 @@ func app() *cli.App {
 					Usage: "webserver port for pprof and metrics",
 					Value: "8080",
 				},
+				&cli.StringFlag{
+					Name:  "kafka-brokers",
+					Usage: "listen to bitbucket webhook transported over kafka",
+				},
 			},
 		},
 		{

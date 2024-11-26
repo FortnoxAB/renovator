@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/fortnoxab/renovator/pkg/command"
-	"github.com/fortnoxab/renovator/pkg/master"
+	localredis "github.com/fortnoxab/renovator/pkg/redis"
 	"github.com/fortnoxab/renovator/pkg/renovate"
 	"github.com/fortnoxab/renovator/pkg/webserver"
 	"github.com/prometheus/client_golang/prometheus"
@@ -85,15 +85,13 @@ func (a *Agent) Run(ctx context.Context) {
 	}
 
 	for ctx.Err() == nil {
-		repos, err := a.RedisClient.BLPop(ctx, 0, master.RedisRepoListKey).Result() // 0 duration == block until key exists.
+		repos, err := a.RedisClient.BLPop(ctx, 0, localredis.RedisRepoListKey).Result() // 0 duration == block until key exists.
 		if err != nil {
 			logrus.Error("BLpop err: ", err)
 			continue
 		}
 
-		logrus.Debugf("got %d number of repos to process", len(repos))
-
-		if len(repos) != 2 || repos[0] != master.RedisRepoListKey {
+		if len(repos) != 2 || repos[0] != localredis.RedisRepoListKey {
 			logrus.Errorf("unexpected reply from BLpop: %s", strings.Join(repos, ","))
 			continue
 		}
