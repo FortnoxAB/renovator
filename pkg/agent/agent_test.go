@@ -30,7 +30,7 @@ func TestRun(t *testing.T) {
 		list: []string{"project1/repo1", "project1/repo2", "project2/repo1"},
 	}
 
-	redisMockCall := redisMock.On("BLPop", mock.Anything, time.Duration(0), "renovator-joblist")
+	redisMockCall := redisMock.On("BLPop", mock.Anything, time.Duration(time.Second*5), "renovator-joblist")
 	redisMockCall.RunFn = func(a mock.Arguments) {
 		redisMockCall.ReturnArguments = mock.Arguments{redisMockList.LPop()}
 	}

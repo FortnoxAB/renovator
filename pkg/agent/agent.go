@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/fortnoxab/renovator/pkg/command"
 	localredis "github.com/fortnoxab/renovator/pkg/redis"
@@ -70,6 +71,7 @@ func (a *Agent) Run(ctx context.Context) {
 					return
 				case repo := <-reposToProcess:
 					logrus.Infof("running renovate on repo: %s", repo)
+					start := time.Now()
 					err := a.Renovator.RunRenovate(repo)
 					if err != nil {
 						renovateRuns.WithLabelValues("error", repo).Inc()
@@ -77,16 +79,18 @@ func (a *Agent) Run(ctx context.Context) {
 						continue
 					}
 					renovateRuns.WithLabelValues("ok", repo).Inc()
-					logrus.Infof("finished renovating repo: %s", repo)
+					logrus.Infof("finished renovating repo: %s in %s", repo, time.Since(start))
 				}
-
 			}
 		}()
 	}
 
 	for ctx.Err() == nil {
-		repos, err := a.RedisClient.BLPop(ctx, 0, localredis.RedisRepoListKey).Result() // 0 duration == block until key exists.
+		repos, err := a.RedisClient.BLPop(ctx, time.Second*5, localredis.RedisRepoListKey).Result() // 0 duration == block until key exists. We block for 5 seconds otherwise it will not work with shutdown https://github.com/redis/go-redis/issues/2556
 		if err != nil {
+			if err == redis.Nil {
+				continue
+			}
 			logrus.Error("BLpop err: ", err)
 			continue
 		}
