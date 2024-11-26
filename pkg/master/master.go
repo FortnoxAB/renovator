@@ -69,10 +69,12 @@ func (m *Master) Run(ctx context.Context) error {
 	}
 
 	if m.RunFirstTime {
+		logrus.Info("running due to --run-first-time")
 		err := doRun(ctx, m.Candidate, m.RedisClient, m.Renovator, m.LeaderElect)
 		if err != nil {
 			logrus.Errorf("failed first time run, err: %s", err.Error())
 		}
+		logrus.Info("--run-first-time done")
 	}
 
 	cronRnr := cron.New()

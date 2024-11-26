@@ -40,6 +40,10 @@ func app() *cli.App {
 			Value: "info",
 			Usage: "available levels are: " + strings.Join(getLevels(), ","),
 		},
+		&cli.BoolFlag{
+			Name:  "log-json",
+			Usage: "log in json",
+		},
 	}
 
 	redisStringflag := &cli.StringFlag{
@@ -128,6 +132,10 @@ func globalBefore(c *cli.Context) error {
 		_, _ = fmt.Fprintf(os.Stderr, "using loglevel: %s\n", lvl.String())
 	}
 	logrus.SetLevel(lvl)
+
+	if c.Bool("log-json") {
+		logrus.SetFormatter(&logrus.JSONFormatter{})
+	}
 
 	return nil
 }

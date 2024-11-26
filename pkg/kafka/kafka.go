@@ -109,7 +109,6 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 					logrus.Errorf("error LPush: %s", err)
 				}
 			}
-		//TODO dbouncer same hook can happen twice....
 
 		// Should return when `session.Context()` is done.
 		// If not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout` when kafka rebalance. see:

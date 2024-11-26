@@ -33,10 +33,6 @@ func (ws *Webserver) Init() *gin.Engine {
 	}
 	router.Use(ginlogrus.New(logrus.StandardLogger(), logIgnorePaths...), gin.Recovery())
 
-	// router.GET("/", func(c *gin.Context) {
-	// 	fmt.Fprintf(c.Writer, `todo`)
-	// })
-
 	pprof.Register(router)
 	return router
 }
