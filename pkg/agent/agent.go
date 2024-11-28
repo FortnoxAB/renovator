@@ -2,9 +2,13 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/fortnoxab/renovator/pkg/command"
@@ -48,7 +52,7 @@ func NewAgentFromContext(cCtx *cli.Context) (*Agent, error) {
 }
 
 func (a *Agent) Run(ctx context.Context) {
-
+	ZombieReaper()
 	reposToProcess := make(chan string)
 
 	wg := &sync.WaitGroup{}
@@ -103,4 +107,26 @@ func (a *Agent) Run(ctx context.Context) {
 		reposToProcess <- repos[1]
 	}
 	wg.Wait()
+}
+
+func ZombieReaper() {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGCHLD)
+
+	go func() {
+		for range signals {
+			for {
+				var wstatus syscall.WaitStatus
+				pid, err := syscall.Wait4(-1, &wstatus, 0, nil)
+				if errors.Is(err, syscall.ECHILD) {
+					break
+				}
+				if err != nil {
+					logrus.Errorf("error waiting for child %d: %s", pid, err)
+					continue
+				}
+				logrus.Debugf("reaped zombie %d %d", pid, wstatus)
+			}
+		}
+	}()
 }

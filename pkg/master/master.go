@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/fortnoxab/renovator/pkg/agent"
 	"github.com/fortnoxab/renovator/pkg/command"
 	"github.com/fortnoxab/renovator/pkg/kafka"
 	"github.com/fortnoxab/renovator/pkg/leaderelect"
@@ -63,10 +64,10 @@ func NewMasterFromContext(cCtx *cli.Context) (*Master, error) {
 }
 
 func (m *Master) Run(ctx context.Context) error {
-
 	if m.CronSchedule == nil {
 		return doRun(ctx, m.Candidate, m.RedisClient, m.Renovator, m.LeaderElect)
 	}
+	agent.ZombieReaper()
 
 	if m.RunFirstTime {
 		logrus.Info("running due to --run-first-time")
