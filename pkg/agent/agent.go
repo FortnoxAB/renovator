@@ -117,6 +117,7 @@ func ZombieReaper() {
 		for range signals {
 			for {
 				var wstatus syscall.WaitStatus
+				time.Sleep(1 * time.Second)
 				pid, err := syscall.Wait4(-1, &wstatus, 0, nil)
 				if errors.Is(err, syscall.ECHILD) {
 					break
