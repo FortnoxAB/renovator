@@ -59,11 +59,12 @@ services:
 
   agent-1:
     image: renovate/renovate:39.21.1-full
-    command:
+    entrypoint:
       - /renovator/renovator
       - --loglevel=debug
       - agent
       - --redis-url=redis://redis:6379/0
+      # - --max-process-count=5
     depends_on:
       init-agent-1:
         condition: service_completed_successfully
