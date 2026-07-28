@@ -9,6 +9,7 @@ import (
 	"github.com/fortnoxab/renovator/mocks"
 	localredis "github.com/fortnoxab/renovator/pkg/redis"
 	"github.com/fortnoxab/renovator/pkg/renovate"
+	"github.com/fortnoxab/renovator/pkg/repoowner"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
@@ -24,7 +25,7 @@ func TestRun(t *testing.T) {
 		Renovator:       renovate.NewRunner(commanderMock),
 		RedisClient:     redisMock,
 		MaxProcessCount: 2,
-		OwnerResolver:   fakeResolver{},
+		OwnerResolver:   &repoowner.Resolver{BaseDir: t.TempDir()},
 	}
 
 	redisMockList := redisMockList{
@@ -60,10 +61,6 @@ func TestRun(t *testing.T) {
 
 	a.Run(ctx)
 }
-
-type fakeResolver struct{}
-
-func (fakeResolver) Resolve(string) (string, string) { return "", "" }
 
 type redisMockList struct {
 	lock sync.RWMutex

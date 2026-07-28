@@ -27,16 +27,12 @@ func init() {
 	prometheus.MustRegister(renovateRuns)
 }
 
-type ownerResolver interface {
-	Resolve(repo string) (team, name string)
-}
-
 type Agent struct {
 	Renovator       *renovate.Runner
 	RedisClient     redis.Cmdable
 	MaxProcessCount int
 	Webserver       *webserver.Webserver
-	OwnerResolver   ownerResolver
+	OwnerResolver   *repoowner.Resolver
 }
 
 func NewAgentFromContext(cCtx *cli.Context) (*Agent, error) {
@@ -78,8 +74,10 @@ func (a *Agent) Run(ctx context.Context) {
 				case repo := <-reposToProcess:
 					logrus.Infof("running renovate on repo: %s", repo)
 					start := time.Now()
+					// Before renovate: it deletes the clone we read the team from.
+					owner := a.OwnerResolver.Watch(ctx, repo)
 					err := a.Renovator.RunRenovate(repo)
-					team, name := a.OwnerResolver.Resolve(repo)
+					team, name := owner.Result()
 					if err != nil {
 						renovateRuns.WithLabelValues("error", repo, team, name).Inc()
 						logrus.Errorf("error renovating repo: %s err: %s", repo, err)
