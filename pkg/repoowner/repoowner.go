@@ -23,7 +23,8 @@ func Resolve(cloneDir, slug string) (team, name string) {
 	path := filepath.Join(cloneDir, "config.json")
 	data, err := os.ReadFile(path) // #nosec G304 -- path built from trusted env + discovered repo slug
 	if err != nil {
-		logrus.Warnf("repoowner: cannot read %s, defaulting team=%q: %s", path, Unknown, err)
+		// Plenty of repos have no config.json, so this is expected rather than a problem.
+		logrus.Debugf("repoowner: cannot read %s, defaulting team=%q: %s", path, Unknown, err)
 		return team, name
 	}
 

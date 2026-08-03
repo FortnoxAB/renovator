@@ -63,7 +63,7 @@ func (a *Agent) processRepo(repo string) {
 		return
 	}
 	renovateRuns.WithLabelValues("ok", repo, team, name).Inc()
-	logrus.Infof("finished renovating repo: %s in %s", repo, time.Since(start))
+	logrus.Infof("finished renovating repo: %s (team %s) in %s", repo, team, time.Since(start))
 }
 
 func (a *Agent) Run(ctx context.Context) {
